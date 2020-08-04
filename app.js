@@ -5,15 +5,15 @@ var app = new Vue({
         title: '',
         description: '',
         lista: [],
-        searchText:''
+        searchText: ''
     },
     computed: {
-        filteredList:function(){
+        filteredList: function () {
             var arrayFilter = this.lista;
             var queryText = this.searchText;
 
-            if(queryText !== ""){
-                arrayFilter = arrayFilter.filter(function(obj){
+            if (queryText !== "") {
+                arrayFilter = arrayFilter.filter(function (obj) {
                     return (
                         obj.title.toLowerCase() + '' + obj.description.toLowerCase()
                     ).indexOf(queryText.toLowerCase()) > -1
@@ -29,13 +29,32 @@ var app = new Vue({
                 title: title,
                 description: description
             }
-            app.lista.push(item);
+            firebase.database().ref("hobbies/" + key).set(item);
+            app.listReload();
         },
         deleteItem: function (key) {
-            var index = app.lista.map(function(obj){
-                return obj.key;
-            }).indexOf(key)
-            app.lista.splice(index,1);
+            firebase.database().ref("hobbies/" + key).remove();
+            app.listReload();
+        },
+        listReload: function(){
+            app.lista = [];
+            app.listItems();
+        },
+        listItems: function(){
+            var elementsToLoad = firebase.database().ref('hobbies');
+
+            elementsToLoad.on('value', function (snapshot) {
+                snapshot.forEach(function (childSnapshot) {
+                    var childData = childSnapshot.val();
+                    app.lista.push(childData);
+                });
+            });
         }
+    },
+
+    //Parece que "created" es una palabra reservada
+    created: function ()
+    {
+       this.listItems();
     }
 })
